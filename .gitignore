@@ -40,3 +40,4 @@ tmp_scans/
 
 # Docker
 docker-data/
+frontend/.next/
