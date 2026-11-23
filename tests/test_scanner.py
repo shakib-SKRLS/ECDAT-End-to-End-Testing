@@ -18,21 +18,24 @@ def test_source_scanner():
     # Use absolute path to fixtures
     fixtures_path = Path(__file__).parent.parent / "fixtures" / "vulnerable-project"
     results = scanner.scan(fixtures_path)
-    # Scanner should find at least some detections
-    assert len(results) >= 0
+    # The vulnerable fixture must actually be detected (AES, 3DES, ECDSA,
+    # MD5, SHA-1 are all present in fixtures/vulnerable-project/crypto.py).
+    assert len(results) > 0
+    found = {d.algorithm for d in results}
+    assert {"AES", "3DES", "ECDSA", "MD5", "SHA-1"} <= found
 
 
 def test_dependency_scanner():
     """Test dependency scanner."""
     scanner = DependencyScanner()
-    results = scanner.scan(Path("../fixtures/vulnerable-project"))
+    results = scanner.scan(Path(__file__).parent.parent / "fixtures" / "vulnerable-project")
     assert len(results) >= 0  # May be empty if no crypto deps
 
 
 def test_certificate_scanner():
     """Test certificate scanner."""
     scanner = CertificateScanner()
-    results, certs = scanner.scan(Path("../fixtures/vulnerable-project"))
+    results, certs = scanner.scan(Path(__file__).parent.parent / "fixtures" / "vulnerable-project")
     assert isinstance(results, list)
     assert isinstance(certs, list)
 
