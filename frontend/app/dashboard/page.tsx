@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api";
 import Link from "next/link"
 
 interface Project {
@@ -20,7 +21,7 @@ export default function DashboardPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/projects")
+      const response = await apiFetch("/api/projects")
       const data = await response.json()
       setProjects(data)
     } catch (error) {
