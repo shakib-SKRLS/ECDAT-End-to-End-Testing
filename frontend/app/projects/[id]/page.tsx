@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -39,7 +40,7 @@ export default function ProjectPage() {
 
   const fetchProject = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/projects/${params.id}`)
+      const response = await apiFetch(`/api/projects/${params.id}`)
       const data = await response.json()
       setProject(data)
     } catch (error) {
@@ -49,7 +50,7 @@ export default function ProjectPage() {
 
   const fetchScans = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/scans?skip=0&limit=10`)
+      const response = await apiFetch(`/api/scans?skip=0&limit=10`)
       const data = await response.json()
       setScans(data.filter((s: Scan) => s.project_id === params.id))
     } catch (error) {
@@ -61,7 +62,7 @@ export default function ProjectPage() {
 
   const startScan = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/scans", {
+      const response = await apiFetch("/api/scans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
