@@ -9,6 +9,9 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.cbom.generator import CBOMGenerator
+from app.core.config import get_settings
+from app.core.security import resolve_allowed_path
+from app.db.session import SessionLocal
 from app.models.entities import (
     CryptoAsset,
     Finding,
@@ -29,12 +32,24 @@ from scanner.source.scanner import SourceCodeScanner
 
 
 class ScanService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session | None = None) -> None:
         self.db = db
         self.cbom_generator = CBOMGenerator()
     
     def execute_scan(self, scan_id: str) -> None:
-        """Execute a scan and store results in database."""
+        """Execute a scan and store results in database.
+
+        Opens its own session: when run via FastAPI BackgroundTasks the
+        request-scoped session is closed after the response is sent, so it
+        must not be reused here.
+        """
+        self.db = SessionLocal()
+        try:
+            self._execute_scan(scan_id)
+        finally:
+            self.db.close()
+
+    def _execute_scan(self, scan_id: str) -> None:
         scan = self.db.query(Scan).filter(Scan.id == scan_id).first()
         if not scan:
             return
@@ -51,16 +66,25 @@ class ScanService:
             if not project:
                 raise ValueError("Project not found")
             
-            # Scan path
-            scan_path = Path(scan.source_location)
-            if not scan_path.exists():
-                raise ValueError(f"Scan path does not exist: {scan_path}")
+            # Scan path — enforce ECDAT_ALLOWED_SCAN_ROOTS. Only local_dir
+            # is implemented; git/archive sources fail loudly instead of
+            # being misread as a local path (see issue E-I1).
+            if scan.source_type != "local_dir":
+                raise ValueError(
+                    f"Unsupported source_type: {scan.source_type} (only local_dir is implemented)"
+                )
+            scan_path = resolve_allowed_path(scan.source_location)
             
             # Run scanners
             all_detections: list[Detection] = []
             
             # Source code
-            source_scanner = SourceCodeScanner()
+            settings = get_settings()
+            source_scanner = SourceCodeScanner(
+                max_files=settings.max_scan_files,
+                max_file_bytes=settings.max_file_bytes,
+                workers=settings.scan_workers,
+            )
             all_detections.extend(source_scanner.scan(scan_path))
             scan.progress = 25
             self.db.commit()
@@ -118,7 +142,7 @@ class ScanService:
                 detections=all_detections,
                 data_lifetime_years=project.data_lifetime_years,
                 migration_time_years=project.migration_time_years,
-                quantum_threat_horizon_years=10.0,  # From config
+                quantum_threat_horizon_years=settings.quantum_threat_horizon_years,
                 business_criticality=project.business_criticality,
                 exposure=project.exposure,
             )
@@ -216,7 +240,7 @@ class ScanService:
         mosca_result = assess_mosca(
             data_lifetime_years=project.data_lifetime_years,
             migration_time_years=project.migration_time_years,
-            quantum_threat_horizon_years=10.0,
+            quantum_threat_horizon_years=get_settings().quantum_threat_horizon_years,
         )
         
         risk = RiskAssessment(
@@ -225,7 +249,7 @@ class ScanService:
             overall_score=overall_score,
             category=self._category_for_score(overall_score),
             quantum_readiness_percent=quantum_readiness,
-            quantum_threat_horizon_years=10.0,
+            quantum_threat_horizon_years=get_settings().quantum_threat_horizon_years,
             data_lifetime_years=project.data_lifetime_years,
             migration_time_years=project.migration_time_years,
             mosca_urgent=mosca_result.urgent,
@@ -242,7 +266,7 @@ class ScanService:
             primitive_type=asset.primitive_type,
             data_lifetime_years=project.data_lifetime_years,
             migration_time_years=project.migration_time_years,
-            quantum_threat_horizon_years=10.0,
+            quantum_threat_horizon_years=get_settings().quantum_threat_horizon_years,
             business_criticality=project.business_criticality,
             exposure=project.exposure,
         )
