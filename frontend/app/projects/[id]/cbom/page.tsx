@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation"
 import Link from "next/link"
 
@@ -32,7 +33,7 @@ export default function CBOMPage() {
 
   const fetchAssets = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/assets?project_id=${params.id}`)
+      const response = await apiFetch(`/api/assets?project_id=${params.id}`)
       const data = await response.json()
       // Ensure data is an array
       setAssets(Array.isArray(data) ? data : [])
