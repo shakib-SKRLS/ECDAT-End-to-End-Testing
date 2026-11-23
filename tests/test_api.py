@@ -108,7 +108,7 @@ def test_create_scan(client):
         json={
             "project_id": project_id,
             "source_type": "local_dir",
-            "source_location": "../fixtures/vulnerable-project",
+            "source_location": str(Path(__file__).parent.parent / "fixtures" / "vulnerable-project"),
         },
     )
     assert response.status_code == 201
