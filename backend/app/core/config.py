@@ -8,7 +8,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ECDAT_", env_file=".env", extra="ignore")
+    # .env lives at the repo root (README step 4); resolve it absolutely so
+    # it is found whether the backend runs from backend/ or the repo root.
+    model_config = SettingsConfigDict(
+        env_prefix="ECDAT_", env_file=str(REPO_ROOT / ".env"), extra="ignore"
+    )
 
     database_url: str = "sqlite:///./data/ecdat.db"
     host: str = "0.0.0.0"
