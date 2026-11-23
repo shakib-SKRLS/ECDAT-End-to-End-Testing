@@ -24,9 +24,10 @@ def create_scan(scan: ScanCreate, background_tasks: BackgroundTasks, db: Session
     db.commit()
     db.refresh(db_scan)
     
-    # Execute scan in background
-    scan_service = ScanService(db)
-    background_tasks.add_task(scan_service.execute_scan, db_scan.id)
+    # Execute scan in background. ScanService opens its own DB session: the
+    # request-scoped `db` is closed when this response returns, so the
+    # background task must not reuse it.
+    background_tasks.add_task(ScanService().execute_scan, db_scan.id)
     
     return _to_out(db_scan)
 
