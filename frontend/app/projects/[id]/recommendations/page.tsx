@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation"
 import Link from "next/link"
 
@@ -26,7 +27,7 @@ export default function RecommendationsPage() {
 
   const fetchRecommendations = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/recommendations/project/${params.id}`)
+      const response = await apiFetch(`/api/recommendations/project/${params.id}`)
       const data = await response.json()
       // Ensure data is an array
       setRecommendations(Array.isArray(data) ? data : [])
