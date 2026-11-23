@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -29,7 +30,7 @@ export default function FindingsPage() {
 
   const fetchFindings = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/findings?project_id=${params.id}`)
+      const response = await apiFetch(`/api/findings?project_id=${params.id}`)
       const data = await response.json()
       // Ensure data is an array
       setFindings(Array.isArray(data) ? data : [])
