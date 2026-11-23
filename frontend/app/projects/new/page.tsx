@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation"
 
 export default function NewProjectPage() {
@@ -17,7 +18,7 @@ export default function NewProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch("http://localhost:8000/api/projects", {
+      const response = await apiFetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
